@@ -10,22 +10,8 @@ const Login: React.FC = () => {
       
       <div className="z-10 glass-effect p-8 rounded-xl max-w-md w-full">
         <div className="mb-8">
-          <div className="h-20 w-20 bg-white rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg 
-              xmlns="http://www.w3.org/2000/svg" 
-              width="40" 
-              height="40" 
-              viewBox="0 0 24 24" 
-              fill="none" 
-              stroke="black" 
-              strokeWidth="2" 
-              strokeLinecap="round" 
-              strokeLinejoin="round"
-            >
-              <path d="M9 18V5l12-2v13" />
-              <circle cx="6" cy="18" r="3" />
-              <circle cx="18" cy="16" r="3" />
-            </svg>
+          <div className="h-20 w-20 bg-secondary rounded-full flex items-center justify-center mx-auto mb-4">
+            <img width={'60'} height={'60'} src="/spotunisia-logo.png" alt="Logo" />
           </div>
           <h1 className="text-4xl font-bold mb-2 text-white">Spotunisia</h1>
           <p className="text-gray-400">Connect with your Spotify account to access your music.</p>
