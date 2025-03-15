@@ -129,3 +129,11 @@
 .download-button {
   @apply opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-white bg-primary hover:bg-primary/90 rounded-full p-2;
 }
+
+::-moz-selection { /* Code for Firefox */
+  background: red
+}
+
+::selection {
+  background: red;
+}
