@@ -2,6 +2,8 @@
 import React from 'react';
 import { Play, Pause, Download } from 'lucide-react';
 import { Song } from '@/utils/types';
+import { downloadSpotifyTrack } from '@/utils/spotifyApi';
+import { toast } from '@/hooks/use-toast';
 
 interface SongCardProps {
   song: Song;
@@ -20,9 +22,41 @@ const SongCard: React.FC<SongCardProps> = ({
   variant,
   onDownload = () => {} 
 }) => {
-  const handleDownload = (e: React.MouseEvent<HTMLButtonElement>) => {
+  const handleDownload = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
-    onDownload(e, song);
+    
+    // Try the provided onDownload handler first (for backward compatibility)
+    if (onDownload) {
+      onDownload(e, song);
+    }
+    
+    // If the song doesn't have a playable audio URL, try to download it from YouTube
+    if (!song.audio) {
+      try {
+        // If we have enough track information, try to download it
+        if (song.title && song.artist && song.artist.name) {
+          const trackInfo = {
+            name: song.title,
+            artists: [{ name: song.artist.name }]
+          };
+          
+          await downloadSpotifyTrack(trackInfo);
+        } else {
+          toast({
+            title: "Download Failed",
+            description: "Insufficient track information for download.",
+            variant: "destructive"
+          });
+        }
+      } catch (error) {
+        console.error("Error initiating download:", error);
+        toast({
+          title: "Download Error",
+          description: "Failed to initiate download. Please try again.",
+          variant: "destructive"
+        });
+      }
+    }
   };
 
   if (variant === 'grid') {
@@ -43,7 +77,7 @@ const SongCard: React.FC<SongCardProps> = ({
         <div className="absolute inset-0 bg-black/40 flex flex-col justify-between p-3">
           <div className="flex justify-end">
             <button 
-              className="download-button"
+              className="download-button opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/40 rounded-full p-2 hover:bg-primary"
               onClick={handleDownload}
               aria-label="Download song"
             >
@@ -104,7 +138,7 @@ const SongCard: React.FC<SongCardProps> = ({
       
       {/* Download Button */}
       <button 
-        className="download-button mr-2"
+        className="download-button mr-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 p-1.5 rounded-full hover:bg-white/10"
         onClick={handleDownload}
         aria-label="Download song"
       >

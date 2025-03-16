@@ -1,3 +1,4 @@
+
 // Constants for Spotify API
 const CLIENT_ID = 'de1a3dbef27c412095ae6de8e88a4964'; // Replace with your Spotify API client ID
 const REDIRECT_URI = window.location.origin;
@@ -115,4 +116,96 @@ export const getNewReleases = async (token: string, limit: number = 10) => {
 // Get recommendations based on user's top tracks
 export const getRecommendations = async (token: string, seedTracks: string[], limit: number = 20) => {
   return apiRequest(`/recommendations?seed_tracks=${seedTracks.join(',')}&limit=${limit}`, token);
+};
+
+// Get all tracks from a playlist with pagination support
+export const getPlaylistTracks = async (token: string, playlistId: string, limit: number = 100) => {
+  let allTracks: any[] = [];
+  let offset = 0;
+  let hasMore = true;
+  
+  while (hasMore) {
+    const data = await apiRequest(`/playlists/${playlistId}/tracks?limit=${limit}&offset=${offset}`, token);
+    allTracks = [...allTracks, ...data.items];
+    
+    // Check if there are more tracks to fetch
+    if (data.next) {
+      offset += limit;
+    } else {
+      hasMore = false;
+    }
+  }
+  
+  return allTracks;
+};
+
+// Format duration from milliseconds to MM:SS format
+export const formatDuration = (ms: number): string => {
+  const minutes = Math.floor(ms / 60000);
+  const seconds = Math.floor((ms % 60000) / 1000);
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+};
+
+// Import YouTube API functions for downloading
+import { searchYouTube, getAudioDownloadUrl, downloadAudio, sanitizeFilename } from './youtubeApi';
+import { toast } from '@/hooks/use-toast';
+
+// Download a Spotify track
+export const downloadSpotifyTrack = async (track: {
+  name: string;
+  artists: { name: string }[];
+}) => {
+  try {
+    // Show toast notification for download start
+    toast({
+      title: 'Starting Download',
+      description: `Searching for "${track.name}" by ${track.artists[0].name}...`,
+      duration: 3000,
+    });
+
+    // Create a search query for YouTube
+    const searchQuery = `${track.name} ${track.artists[0].name} audio`;
+    
+    // Search YouTube for the track
+    const videoId = await searchYouTube(searchQuery);
+    
+    if (!videoId) {
+      toast({
+        title: 'Download Failed',
+        description: 'Could not find this track on YouTube.',
+        variant: 'destructive',
+      });
+      return false;
+    }
+    
+    // Get sanitized filename
+    const filename = sanitizeFilename(`${track.artists[0].name} - ${track.name}`);
+    
+    // Download the audio
+    const success = await downloadAudio(videoId, track.artists[0].name, track.name);
+    
+    if (success) {
+      toast({
+        title: 'YouTube Opened',
+        description: 'YouTube has been opened in a new tab. You can use browser extensions to download the audio.',
+        duration: 5000,
+      });
+      return true;
+    } else {
+      toast({
+        title: 'Download Failed',
+        description: 'Failed to initiate download. Please try again later.',
+        variant: 'destructive',
+      });
+      return false;
+    }
+  } catch (error) {
+    console.error('Error downloading track:', error);
+    toast({
+      title: 'Download Error',
+      description: 'An error occurred while trying to download the track.',
+      variant: 'destructive',
+    });
+    return false;
+  }
 };
