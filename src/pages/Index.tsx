@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import MusicPlayer from '@/components/MusicPlayer';
@@ -347,44 +348,53 @@ const Index = () => {
         {topTracks.length > 0 && (
           <section className="mb-12 animate-fade-in" style={{ animationDelay: '300ms' }}>
             <h2 className="text-2xl font-semibold mb-6">Your Top Tracks</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {topTracks.slice(0, 5).map(song => (
-                <div key={song.id} className="glass-card rounded-xl p-4 hover-scale">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
+              {topTracks.slice(0, 8).map(song => (
+                <div key={song.id} className="glass-card rounded-xl overflow-hidden hover-scale group">
                   <div 
-                    className="flex items-center gap-4 cursor-pointer" 
+                    className="relative aspect-square cursor-pointer" 
                     onClick={() => playSong(song)}
                   >
-                    <div className="relative w-20 h-20 sm:w-24 sm:h-24 flex-shrink-0">
-                      <img 
-                        src={song.cover || '/placeholder.svg'} 
-                        alt={song.title} 
-                        className="w-full h-full object-cover rounded-lg"
-                      />
-                      {currentSong?.id === song.id && (
-                        <div className="absolute inset-0 bg-black/30 rounded-lg flex items-center justify-center">
-                          <div className={`w-10 h-10 rounded-full bg-primary flex items-center justify-center ${isPlaying ? 'animate-pulse' : ''}`}>
-                            {isPlaying ? (
-                              <span className="pause-icon"></span>
-                            ) : (
-                              <span className="play-icon"></span>
-                            )}
-                          </div>
+                    <img 
+                      src={song.cover || '/placeholder.svg'} 
+                      alt={song.title} 
+                      className="w-full h-full object-cover"
+                    />
+                    
+                    {/* Gradient overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/70"></div>
+                    
+                    {/* Song info */}
+                    <div className="absolute bottom-0 left-0 w-full p-3 text-white">
+                      <h3 className="font-semibold truncate text-sm">{song.title}</h3>
+                      <p className="text-xs text-white/80 truncate">{song.artist.name}</p>
+                    </div>
+                    
+                    {/* Play/pause indicator */}
+                    {currentSong?.id === song.id && (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className={`w-12 h-12 rounded-full bg-primary flex items-center justify-center ${isPlaying ? 'animate-pulse' : ''}`}>
+                          {isPlaying ? (
+                            <span className="pause-icon"></span>
+                          ) : (
+                            <span className="play-icon"></span>
+                          )}
                         </div>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-lg font-semibold truncate">{song.title}</h3>
-                      <p className="text-gray-400 truncate">{song.artist.name}</p>
-                      <div className="flex items-center gap-3 mt-2">
-                        <button 
-                          className="download-button opacity-100 text-xs bg-primary/80 hover:bg-primary px-3 py-1"
-                          onClick={(e) => handleDownload(e, song)}
-                        >
-                          Download
-                        </button>
-                        <span className="text-xs text-gray-500">{song.duration}</span>
                       </div>
-                    </div>
+                    )}
+                    
+                    {/* Download button with fade in effect on hover */}
+                    <button 
+                      className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-primary hover:bg-primary/90 rounded-full p-2 text-white"
+                      onClick={(e) => handleDownload(e, song)}
+                      aria-label="Download song"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                      </svg>
+                    </button>
                   </div>
                 </div>
               ))}
