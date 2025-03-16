@@ -5,6 +5,7 @@ import { getUserPlaylists } from '@/utils/spotifyApi';
 import { useSpotifyAuth } from '@/hooks/use-spotify-auth';
 import { SpotifyPlaylist } from '@/utils/types';
 import { Home, Search, Library, PlusSquare, Heart, LogOut } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -17,6 +18,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onLogout }) => {
   const { token } = useSpotifyAuth();
   const [playlists, setPlaylists] = useState<SpotifyPlaylist[]>([]);
   const [loading, setLoading] = useState(false);
+  const location = useLocation();
   
   // Navigation items
   const navItems = [
@@ -26,6 +28,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onLogout }) => {
     { icon: <PlusSquare size={20} />, label: 'Create Playlist', path: '/create-playlist' },
     { icon: <Heart size={20} />, label: 'Liked Songs', path: '/liked-songs' },
   ];
+  
+  // Check if a menu item is active
+  const isActive = (path: string) => {
+    return location.pathname === path || 
+      (location.pathname === '' && path === '/') ||
+      (path !== '/' && location.pathname.startsWith(path));
+  };
   
   // Fetch user playlists
   useEffect(() => {
@@ -47,7 +56,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onLogout }) => {
   }, [token]);
   
   const sidebarClasses = `
-    ${isMobile ? 'fixed inset-y-0 left-0 z-40' : 'sticky top-0 h-screen'}
+    ${isMobile ? 'fixed inset-y-0 left-0 z-40' : 'fixed top-0 h-screen'}
     w-64 glass-effect border-r border-white/10 overflow-y-auto transition-transform duration-300 ease-in-out
     ${isMobile && !isOpen ? '-translate-x-full' : 'translate-x-0'}
   `;
@@ -79,7 +88,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onLogout }) => {
                 <li key={index}>
                   <a 
                     href={item.path} 
-                    className={`flex items-center gap-4 px-2 py-3 rounded-md transition-colors duration-200 ${index === 0 ? 'bg-white/10 text-white' : 'text-gray-300 hover:bg-white/5 hover:text-white'}`}
+                    className={`flex items-center gap-4 px-2 py-3 rounded-md transition-colors duration-200 ${isActive(item.path) ? 'bg-white/10 text-white' : 'text-gray-300 hover:bg-white/5 hover:text-white'}`}
                   >
                     {item.icon}
                     <span>{item.label}</span>
@@ -103,7 +112,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onLogout }) => {
                   <li key={playlist.id}>
                     <a 
                       href={`/playlist/${playlist.id}`} 
-                      className="block px-2 py-2 text-sm text-gray-400 hover:text-white transition-colors duration-200 truncate"
+                      className={`block px-2 py-2 text-sm ${isActive(`/playlist/${playlist.id}`) ? 'text-white bg-white/10 rounded-md' : 'text-gray-400 hover:text-white transition-colors duration-200'} truncate`}
                       title={playlist.name}
                     >
                       {playlist.name}

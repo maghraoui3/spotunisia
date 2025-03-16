@@ -69,7 +69,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         />
         
         {/* Main content */}
-        <main className="flex-1 overflow-y-auto pb-24 transition-all duration-300">
+        <main className={`flex-1 overflow-y-auto pb-24 transition-all duration-300 ${!isMobile ? 'ml-64' : ''}`}>
           <div className="container mx-auto px-4 py-8">
             {children}
           </div>

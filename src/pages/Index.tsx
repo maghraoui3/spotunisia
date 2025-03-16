@@ -28,98 +28,98 @@ const Index = () => {
   const [featuredAlbums, setFeaturedAlbums] = useState<Album[]>([]);
   
   useEffect(() => {
-  const fetchData = async () => {
-    if (!token) return;
-    
-    setLoading(true);
-    try {
-      const userData = await getUserProfile(token);
-      console.log('User data:', userData);
+    const fetchData = async () => {
+      if (!token) return;
       
-      const topTracksData = await getUserTopTracks(token, 20);
-      console.log('Top tracks data:', topTracksData);
-      
-      const newReleasesData = await getNewReleases(token, 10);
-      console.log('New releases data:', newReleasesData);
-      
-      let featuredPlaylistsData = null;
+      setLoading(true);
       try {
-        featuredPlaylistsData = await getFeaturedPlaylists(token, 6);
-        console.log('Featured playlists data:', featuredPlaylistsData);
-      } catch (error) {
-        console.error("Failed to fetch featured playlists:", error);
-      }
-      
-      setUser(userData);
-      
-      if (topTracksData && topTracksData.items && topTracksData.items.length > 0) {
-        const transformedTopTracks = topTracksData.items.map(transformSpotifyTrack);
-        setTopTracks(transformedTopTracks);
+        const userData = await getUserProfile(token);
+        console.log('User data:', userData);
         
-        if (transformedTopTracks.length > 0) {
-          const seedTrackIds = topTracksData.items
-            .slice(0, 5)
-            .map((track: SpotifyTrack) => track.id);
-            
-          const recommendationsData = await getRecommendations(token, seedTrackIds);
-          console.log('Recommendations data:', recommendationsData);
+        const topTracksData = await getUserTopTracks(token, 20);
+        console.log('Top tracks data:', topTracksData);
+        
+        const newReleasesData = await getNewReleases(token, 10);
+        console.log('New releases data:', newReleasesData);
+        
+        let featuredPlaylistsData = null;
+        try {
+          featuredPlaylistsData = await getFeaturedPlaylists(token, 6);
+          console.log('Featured playlists data:', featuredPlaylistsData);
+        } catch (error) {
+          console.error("Failed to fetch featured playlists:", error);
+        }
+        
+        setUser(userData);
+        
+        if (topTracksData && topTracksData.items && topTracksData.items.length > 0) {
+          const transformedTopTracks = topTracksData.items.map(transformSpotifyTrack);
+          setTopTracks(transformedTopTracks);
           
-          if (recommendationsData && recommendationsData.tracks) {
-            const transformedRecommendations = recommendationsData.tracks.map(transformSpotifyTrack);
-            setRecentlyPlayed(transformedRecommendations);
+          if (transformedTopTracks.length > 0) {
+            const seedTrackIds = topTracksData.items
+              .slice(0, 5)
+              .map((track: SpotifyTrack) => track.id);
+              
+            const recommendationsData = await getRecommendations(token, seedTrackIds);
+            console.log('Recommendations data:', recommendationsData);
+            
+            if (recommendationsData && recommendationsData.tracks) {
+              const transformedRecommendations = recommendationsData.tracks.map(transformSpotifyTrack);
+              setRecentlyPlayed(transformedRecommendations);
+            }
+          }
+        } else {
+          if (newReleasesData && newReleasesData.albums && newReleasesData.albums.items) {
+            const tracks = newReleasesData.albums.items
+              .slice(0, 10)
+              .map((album: SpotifyAlbum) => {
+                return {
+                  id: album.id,
+                  name: album.name,
+                  duration_ms: 180000,
+                  preview_url: null,
+                  album: album,
+                  artists: album.artists,
+                  external_urls: album.external_urls
+                } as SpotifyTrack;
+              });
+              
+            const transformedTracks = tracks.map(transformSpotifyTrack);
+            setTopTracks(transformedTracks);
+            setRecentlyPlayed(transformedTracks);
           }
         }
-      } else {
-        if (newReleasesData && newReleasesData.albums && newReleasesData.albums.items) {
-          const tracks = newReleasesData.albums.items
-            .slice(0, 10)
-            .map((album: SpotifyAlbum) => {
-              return {
-                id: album.id,
-                name: album.name,
-                duration_ms: 180000,
-                preview_url: null,
-                album: album,
-                artists: album.artists,
-                external_urls: album.external_urls
-              } as SpotifyTrack;
-            });
-            
-          const transformedTracks = tracks.map(transformSpotifyTrack);
-          setTopTracks(transformedTracks);
-          setRecentlyPlayed(transformedTracks);
-        }
-      }
-      
-      if (newReleasesData && newReleasesData.albums && newReleasesData.albums.items) {
-        const transformedAlbums = newReleasesData.albums.items.map((album: SpotifyAlbum) => {
-          const artist: Artist = {
-            id: album.artists[0].id,
-            name: album.artists[0].name,
-            image: album.images[0]?.url || ''
-          };
-          
-          return {
-            id: album.id,
-            title: album.name,
-            artist: artist,
-            year: new Date(album.release_date).getFullYear(),
-            cover: album.images[0]?.url || '',
-            songs: []
-          };
-        });
         
-        setFeaturedAlbums(transformedAlbums);
+        if (newReleasesData && newReleasesData.albums && newReleasesData.albums.items) {
+          const transformedAlbums = newReleasesData.albums.items.map((album: SpotifyAlbum) => {
+            const artist: Artist = {
+              id: album.artists[0].id,
+              name: album.artists[0].name,
+              image: album.images[0]?.url || ''
+            };
+            
+            return {
+              id: album.id,
+              title: album.name,
+              artist: artist,
+              year: new Date(album.release_date).getFullYear(),
+              cover: album.images[0]?.url || '',
+              songs: []
+            };
+          });
+          
+          setFeaturedAlbums(transformedAlbums);
+        }
+      } catch (error) {
+        console.error("Failed to fetch home data:", error);
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error("Failed to fetch home data:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  fetchData();
-}, [token]);
+    };
+    
+    fetchData();
+  }, [token]);
   
   const transformSpotifyTrack = (track: SpotifyTrack): Song => {
     try {
@@ -345,19 +345,48 @@ const Index = () => {
         )}
         
         {topTracks.length > 0 && (
-          <section className="mb-10 animate-fade-in" style={{ animationDelay: '300ms' }}>
+          <section className="mb-12 animate-fade-in" style={{ animationDelay: '300ms' }}>
             <h2 className="text-2xl font-semibold mb-6">Your Top Tracks</h2>
-            <div className="space-y-2 bg-white/5 rounded-xl p-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {topTracks.slice(0, 5).map(song => (
-                <SongCard 
-                  key={song.id}
-                  song={song}
-                  onClick={() => playSong(song)}
-                  isPlaying={isPlaying}
-                  isActive={currentSong?.id === song.id}
-                  variant="row"
-                  onDownload={handleDownload}
-                />
+                <div key={song.id} className="glass-card rounded-xl p-4 hover-scale">
+                  <div 
+                    className="flex items-center gap-4 cursor-pointer" 
+                    onClick={() => playSong(song)}
+                  >
+                    <div className="relative w-20 h-20 sm:w-24 sm:h-24 flex-shrink-0">
+                      <img 
+                        src={song.cover || '/placeholder.svg'} 
+                        alt={song.title} 
+                        className="w-full h-full object-cover rounded-lg"
+                      />
+                      {currentSong?.id === song.id && (
+                        <div className="absolute inset-0 bg-black/30 rounded-lg flex items-center justify-center">
+                          <div className={`w-10 h-10 rounded-full bg-primary flex items-center justify-center ${isPlaying ? 'animate-pulse' : ''}`}>
+                            {isPlaying ? (
+                              <span className="pause-icon"></span>
+                            ) : (
+                              <span className="play-icon"></span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-lg font-semibold truncate">{song.title}</h3>
+                      <p className="text-gray-400 truncate">{song.artist.name}</p>
+                      <div className="flex items-center gap-3 mt-2">
+                        <button 
+                          className="download-button opacity-100 text-xs bg-primary/80 hover:bg-primary px-3 py-1"
+                          onClick={(e) => handleDownload(e, song)}
+                        >
+                          Download
+                        </button>
+                        <span className="text-xs text-gray-500">{song.duration}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               ))}
             </div>
           </section>
