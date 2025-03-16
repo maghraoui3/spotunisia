@@ -1,4 +1,3 @@
-
 // Constants for Spotify API
 const CLIENT_ID = 'de1a3dbef27c412095ae6de8e88a4964'; // Replace with your Spotify API client ID
 const REDIRECT_URI = window.location.origin;
@@ -147,13 +146,16 @@ export const formatDuration = (ms: number): string => {
 };
 
 // Import YouTube API functions for downloading
-import { searchYouTube, getAudioDownloadUrl, downloadAudio, sanitizeFilename } from './youtubeApi';
+import { searchYouTube, downloadAudio, sanitizeFilename } from './youtubeApi';
 import { toast } from '@/hooks/use-toast';
 
 // Download a Spotify track
 export const downloadSpotifyTrack = async (track: {
   name: string;
   artists: { name: string }[];
+  album?: {
+    images?: { url: string }[];
+  };
 }) => {
   try {
     // Show toast notification for download start
@@ -178,23 +180,23 @@ export const downloadSpotifyTrack = async (track: {
       return false;
     }
     
-    // Get sanitized filename
-    const filename = sanitizeFilename(`${track.artists[0].name} - ${track.name}`);
+    // Get cover URL if available
+    const coverUrl = track.album?.images?.[0]?.url;
     
     // Download the audio
-    const success = await downloadAudio(videoId, track.artists[0].name, track.name);
+    const success = await downloadAudio(videoId, track.artists[0].name, track.name, coverUrl);
     
     if (success) {
       toast({
-        title: 'YouTube Opened',
-        description: 'YouTube has been opened in a new tab. You can use browser extensions to download the audio.',
+        title: 'Download Started',
+        description: 'If the download doesn\'t start automatically, check your browser settings.',
         duration: 5000,
       });
       return true;
     } else {
       toast({
         title: 'Download Failed',
-        description: 'Failed to initiate download. Please try again later.',
+        description: 'Failed to download the track. YouTube has been opened as a fallback.',
         variant: 'destructive',
       });
       return false;

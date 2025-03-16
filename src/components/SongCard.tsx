@@ -37,7 +37,10 @@ const SongCard: React.FC<SongCardProps> = ({
         if (song.title && song.artist && song.artist.name) {
           const trackInfo = {
             name: song.title,
-            artists: [{ name: song.artist.name }]
+            artists: [{ name: song.artist.name }],
+            album: {
+              images: [{ url: song.cover }]
+            }
           };
           
           await downloadSpotifyTrack(trackInfo);

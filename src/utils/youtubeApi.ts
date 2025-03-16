@@ -31,41 +31,123 @@ export const searchYouTube = async (searchQuery: string): Promise<string | null>
 };
 
 /**
- * Gets the download URL for a YouTube video
- * This is using yt-dlp's approach via api
- * Note: In a production app, this would be handled through a backend service
+ * Get the best audio stream URL for a YouTube video.
+ * Note: This is a simplified version and won't work in all browsers due to CORS restrictions.
+ * A proper implementation would require a backend service.
  */
-export const getAudioDownloadUrl = async (videoId: string): Promise<string | null> => {
+export const getYouTubeAudioStream = async (videoId: string): Promise<string | null> => {
   try {
-    // In a real implementation, this would be a call to your backend service
-    // that uses something like yt-dlp to get the actual audio stream
-    // For demo purposes, we're just constructing a URL to a YouTube video
-    // that would allow direct playback
+    // This is a public YouTube API proxy that may work in some cases
+    // Note: In a production environment, this should be handled through a backend service
+    const apiUrl = `https://pipedapi.kavin.rocks/streams/${videoId}`;
     
-    // For simplicity in this demo, we'll just return a YouTube embedded URL
-    // In a production app, you'd need proper server-side processing
-    return `https://www.youtube.com/embed/${videoId}?autoplay=1`;
+    const response = await fetch(apiUrl);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch audio streams: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    // Try to find the audio-only stream with the highest quality
+    const audioStreams = data.audioStreams || [];
+    if (audioStreams.length > 0) {
+      // Sort by quality (usually bitrate)
+      const sortedStreams = audioStreams.sort((a: any, b: any) => 
+        parseInt(b.bitrate) - parseInt(a.bitrate)
+      );
+      
+      return sortedStreams[0].url;
+    }
+    
+    return null;
   } catch (error) {
-    console.error("Error getting audio download URL:", error);
+    console.error("Error getting YouTube audio stream:", error);
+    return null;
+  }
+};
+
+/**
+ * Fetch an image as a blob
+ */
+const fetchImageAsBlob = async (url: string): Promise<Blob | null> => {
+  try {
+    const response = await fetch(url);
+    if (!response.ok) return null;
+    return await response.blob();
+  } catch (error) {
+    console.error("Error fetching image:", error);
+    return null;
+  }
+};
+
+/**
+ * Fetch audio as a blob
+ */
+const fetchAudioAsBlob = async (url: string): Promise<Blob | null> => {
+  try {
+    const response = await fetch(url);
+    if (!response.ok) return null;
+    return await response.blob();
+  } catch (error) {
+    console.error("Error fetching audio:", error);
     return null;
   }
 };
 
 /**
  * Downloads an audio file from the given URL
- * @param url The URL to download from
- * @param filename The filename to save as
+ * @param videoId The YouTube video ID
+ * @param artistName The artist name (for filename)
+ * @param trackName The track name (for filename)
+ * @param coverUrl The URL of the album cover image
  */
-export const downloadAudio = async (videoId: string, artistName: string, trackName: string): Promise<boolean> => {
+export const downloadAudio = async (
+  videoId: string, 
+  artistName: string, 
+  trackName: string,
+  coverUrl?: string
+): Promise<boolean> => {
   try {
-    // In a real implementation, this would be handled on the server-side
-    // using something like yt-dlp to properly download and convert to mp3
+    // First try to get the audio stream URL
+    const audioUrl = await getYouTubeAudioStream(videoId);
     
-    // For client-side demo, we can only offer to open the video in a new tab
-    window.open(`https://www.youtube.com/watch?v=${videoId}`, '_blank');
+    if (!audioUrl) {
+      // Fallback: If we can't get the audio stream, open YouTube in a new tab
+      window.open(`https://www.youtube.com/watch?v=${videoId}`, '_blank');
+      return true;
+    }
+    
+    // Try to fetch the audio as a blob
+    const audioBlob = await fetchAudioAsBlob(audioUrl);
+    if (!audioBlob) {
+      // Fallback: If we can't download the audio, open YouTube in a new tab
+      window.open(`https://www.youtube.com/watch?v=${videoId}`, '_blank');
+      return true;
+    }
+    
+    // Generate a download link
+    const filename = sanitizeFilename(`${artistName} - ${trackName}.mp3`);
+    const downloadUrl = URL.createObjectURL(audioBlob);
+    
+    // Create a temporary anchor element to trigger the download
+    const a = document.createElement('a');
+    a.href = downloadUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    
+    // Clean up
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(downloadUrl);
+    }, 100);
+    
     return true;
   } catch (error) {
     console.error("Error downloading audio:", error);
+    
+    // Fallback: Open YouTube in a new tab
+    window.open(`https://www.youtube.com/watch?v=${videoId}`, '_blank');
     return false;
   }
 };
