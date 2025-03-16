@@ -10,6 +10,9 @@ const LibraryPage: React.FC = () => {
   const [playlists, setPlaylists] = useState<SpotifyPlaylist[]>([]);
   const [artists, setArtists] = useState<SpotifyArtist[]>([]);
   const [loading, setLoading] = useState(true);
+  const [playlistsLoading, setPlaylistsLoading] = useState(false);
+  const [playlistsPage, setPlaylistsPage] = useState(0);
+  const [hasMorePlaylists, setHasMorePlaylists] = useState(true);
   
   useEffect(() => {
     const fetchLibrary = async () => {
@@ -17,13 +20,12 @@ const LibraryPage: React.FC = () => {
       
       setLoading(true);
       try {
-        const [playlistsData, artistsData] = await Promise.all([
-          getUserPlaylists(token, 50),
-          getUserTopArtists(token, 20)
-        ]);
-        
-        setPlaylists(playlistsData.items);
+        // Only get artists initially
+        const artistsData = await getUserTopArtists(token, 20);
         setArtists(artistsData.items);
+        
+        // Get first page of playlists
+        await fetchNextPlaylistsPage();
       } catch (error) {
         console.error("Failed to fetch library data:", error);
       } finally {
@@ -34,7 +36,51 @@ const LibraryPage: React.FC = () => {
     fetchLibrary();
   }, [token]);
   
-  if (loading) {
+  const fetchNextPlaylistsPage = async () => {
+    if (!token || playlistsLoading || !hasMorePlaylists) return;
+    
+    setPlaylistsLoading(true);
+    try {
+      const limit = 20;
+      const offset = playlistsPage * limit;
+      
+      const playlistsData = await getUserPlaylists(token, limit, offset);
+      
+      // Append new playlists to existing ones
+      setPlaylists(prev => [...prev, ...playlistsData.items]);
+      
+      // Check if we've reached the end
+      if (playlistsData.items.length < limit || playlistsData.next === null) {
+        setHasMorePlaylists(false);
+      } else {
+        setPlaylistsPage(prev => prev + 1);
+      }
+    } catch (error) {
+      console.error("Failed to fetch playlists:", error);
+      setHasMorePlaylists(false);
+    } finally {
+      setPlaylistsLoading(false);
+    }
+  };
+  
+  // Load more playlists when user scrolls to the bottom
+  useEffect(() => {
+    const handleScroll = () => {
+      // Check if we're near the bottom of the page
+      if (
+        window.innerHeight + window.scrollY >= document.body.offsetHeight - 500 &&
+        !playlistsLoading &&
+        hasMorePlaylists
+      ) {
+        fetchNextPlaylistsPage();
+      }
+    };
+    
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [playlistsLoading, hasMorePlaylists]);
+  
+  if (loading && playlists.length === 0 && artists.length === 0) {
     return (
       <Layout>
         <div className="flex items-center justify-center h-[60vh]">
@@ -110,12 +156,31 @@ const LibraryPage: React.FC = () => {
                 </div>
               ))}
               
-              {playlists.length === 0 && (
+              {playlists.length === 0 && !playlistsLoading && (
                 <div className="col-span-full text-center py-6">
                   <p className="text-muted-foreground">No playlists found. Create some playlists on Spotify!</p>
                 </div>
               )}
             </div>
+            
+            {/* Loading indicator for playlists */}
+            {playlistsLoading && (
+              <div className="text-center py-6">
+                <p className="text-muted-foreground">Loading more playlists...</p>
+              </div>
+            )}
+            
+            {/* "Load more" button if we have more playlists to load */}
+            {!playlistsLoading && hasMorePlaylists && playlists.length > 0 && (
+              <div className="text-center mt-6">
+                <button 
+                  className="bg-secondary/50 hover:bg-secondary/70 text-white px-4 py-2 rounded-full text-sm"
+                  onClick={fetchNextPlaylistsPage}
+                >
+                  Load More Playlists
+                </button>
+              </div>
+            )}
           </div>
         </section>
       </div>

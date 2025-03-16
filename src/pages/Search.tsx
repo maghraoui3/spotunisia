@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
@@ -7,10 +8,12 @@ import { search } from '@/utils/spotifyApi';
 import { SpotifyTrack, SpotifyArtist, SpotifyAlbum, Song, Artist, Album } from '@/utils/types';
 import MusicPlayer from '@/components/MusicPlayer';
 import SongCard from '@/components/SongCard';
+import { useDebounce } from '@/hooks/use-debounce';
 
 const SearchPage: React.FC = () => {
   const { token } = useSpotifyAuth();
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
   const [results, setResults] = useState<{tracks: Song[], loading: boolean}>({
     tracks: [],
     loading: false
@@ -18,15 +21,22 @@ const SearchPage: React.FC = () => {
   const [currentSong, setCurrentSong] = useState<Song | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!searchTerm.trim() || !token) return;
+  // Use effect for debounced search
+  useEffect(() => {
+    if (debouncedSearchTerm.trim() && token) {
+      performSearch(debouncedSearchTerm);
+    } else if (debouncedSearchTerm === '') {
+      setResults({ tracks: [], loading: false });
+    }
+  }, [debouncedSearchTerm, token]);
+  
+  const performSearch = async (term: string) => {
+    if (!term.trim() || !token) return;
     
     setResults(prev => ({ ...prev, loading: true }));
     
     try {
-      const data = await search(token, searchTerm);
+      const data = await search(token, term);
       
       // Transform Spotify tracks to our app's format
       const transformedTracks = data.tracks.items.map((track: SpotifyTrack) => {
@@ -72,6 +82,13 @@ const SearchPage: React.FC = () => {
         tracks: [],
         loading: false
       });
+    }
+  };
+  
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchTerm.trim() && token) {
+      performSearch(searchTerm);
     }
   };
   

@@ -1,4 +1,3 @@
-
 // Constants for Spotify API
 const CLIENT_ID = 'de1a3dbef27c412095ae6de8e88a4964'; // Replace with your Spotify API client ID
 const REDIRECT_URI = window.location.origin;
@@ -64,27 +63,37 @@ export const getUserProfile = async (token: string) => {
 };
 
 // Get user's playlists
-export const getUserPlaylists = async (token: string, limit = 20) => {
-  return apiRequest(`/me/playlists?limit=${limit}`, token);
+export const getUserPlaylists = async (token: string, limit: number = 20, offset: number = 0) => {
+  const response = await fetch(`https://api.spotify.com/v1/me/playlists?limit=${limit}&offset=${offset}`, {
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  });
+  
+  if (!response.ok) {
+    throw new Error(`Failed to fetch user playlists: ${response.status}`);
+  }
+  
+  return await response.json();
 };
 
 // Get user's liked songs
-export const getUserLikedSongs = async (token: string, limit = 20) => {
+export const getUserLikedSongs = async (token: string, limit: number = 20) => {
   return apiRequest(`/me/tracks?limit=${limit}`, token);
 };
 
 // Get user's top artists
-export const getUserTopArtists = async (token: string, limit = 10) => {
+export const getUserTopArtists = async (token: string, limit: number = 10) => {
   return apiRequest(`/me/top/artists?limit=${limit}&time_range=short_term`, token);
 };
 
 // Get user's top tracks
-export const getUserTopTracks = async (token: string, limit = 10) => {
+export const getUserTopTracks = async (token: string, limit: number = 10) => {
   return apiRequest(`/me/top/tracks?limit=${limit}&time_range=short_term`, token);
 };
 
 // Search tracks, artists, albums
-export const search = async (token: string, query: string, type = 'track,artist,album', limit = 20) => {
+export const search = async (token: string, query: string, type = 'track,artist,album', limit: number = 20) => {
   return apiRequest(`/search?q=${encodeURIComponent(query)}&type=${type}&limit=${limit}`, token);
 };
 
@@ -94,16 +103,16 @@ export const getTrack = async (token: string, trackId: string) => {
 };
 
 // Get featured playlists
-export const getFeaturedPlaylists = async (token: string, limit = 6) => {
+export const getFeaturedPlaylists = async (token: string, limit: number = 6) => {
   return apiRequest(`/browse/featured-playlists?country=US&limit=${limit}`, token);
 };
 
 // Get new releases
-export const getNewReleases = async (token: string, limit = 10) => {
+export const getNewReleases = async (token: string, limit: number = 10) => {
   return apiRequest(`/browse/new-releases?limit=${limit}`, token);
 };
 
 // Get recommendations based on user's top tracks
-export const getRecommendations = async (token: string, seedTracks: string[], limit = 20) => {
+export const getRecommendations = async (token: string, seedTracks: string[], limit: number = 20) => {
   return apiRequest(`/recommendations?seed_tracks=${seedTracks.join(',')}&limit=${limit}`, token);
 };
