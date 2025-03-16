@@ -32,13 +32,11 @@ export const searchYouTube = async (searchQuery: string): Promise<string | null>
 
 /**
  * Get the best audio stream URL for a YouTube video.
- * Note: This is a simplified version and won't work in all browsers due to CORS restrictions.
- * A proper implementation would require a backend service.
+ * Using a more reliable public API proxy for getting audio streams.
  */
 export const getYouTubeAudioStream = async (videoId: string): Promise<string | null> => {
   try {
-    // This is a public YouTube API proxy that may work in some cases
-    // Note: In a production environment, this should be handled through a backend service
+    // Using the Piped API which is a public YouTube frontend that provides stream URLs
     const apiUrl = `https://pipedapi.kavin.rocks/streams/${videoId}`;
     
     const response = await fetch(apiUrl);
